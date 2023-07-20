@@ -14,14 +14,12 @@ func TestRequest__Respond(t *testing.T) {
 
 	buf := bytes.Buffer{}
 
-	req := gojsonrpc2.NewJSONRPCRequest(
-		&gojsonrpc2.JSONRPCMessage{
-			ID:     1,
-			Method: "banana",
-			Params: json.RawMessage(`{"message": "hello banana"}`),
-		},
-		&buf,
-	)
+	req := &gojsonrpc2.JSONRPCMessage{
+		ID:     1,
+		Method: "banana",
+		Params: json.RawMessage(`{"message": "hello banana"}`),
+	}
+	gojsonrpc2.SetMessageWriter(req, &buf)
 
 	if req.IsEvent() {
 		t.Error("request is not event but marked as event")
@@ -56,11 +54,12 @@ func TestRequest__RespondWithError(t *testing.T) {
 
 	buf := bytes.Buffer{}
 
-	req := gojsonrpc2.NewJSONRPCRequest(&gojsonrpc2.JSONRPCMessage{
+	req := &gojsonrpc2.JSONRPCMessage{
 		ID:     1,
 		Method: "banana",
 		Params: json.RawMessage(`{"message": "hello banana"}`),
-	}, &buf)
+	}
+	gojsonrpc2.SetMessageWriter(req, &buf)
 
 	if err := req.RespondErr(context.Background(), 1000, "some error", map[string]any{
 		"banana": "forever",
@@ -93,11 +92,12 @@ func TestRequest__RespondWithError(t *testing.T) {
 func TestRequest__MustRespondWithErrorOnBindParamsError(t *testing.T) {
 	buf := bytes.Buffer{}
 
-	req := gojsonrpc2.NewJSONRPCRequest(&gojsonrpc2.JSONRPCMessage{
+	req := &gojsonrpc2.JSONRPCMessage{
 		ID:     1,
 		Method: "banana",
 		Params: json.RawMessage(`{"message", "hello banana"]`),
-	}, &buf)
+	}
+	gojsonrpc2.SetMessageWriter(req, &buf)
 
 	if _, err := gojsonrpc2.BindParams[any](context.Background(), req); err == nil {
 		t.Fatalf("unexpected success. must fail")

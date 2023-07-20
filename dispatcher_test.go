@@ -13,7 +13,7 @@ import (
 func TestDispatcher__MethodMustBeCalled(t *testing.T) {
 	d := gojsonrpc2.NewJSONRPCDispatcher()
 
-	d.Method("make_banana").SetHandlerFunc(func(ctx context.Context, r *gojsonrpc2.JSONRPCRequest) {
+	d.Method("make_banana").SetHandlerFunc(func(ctx context.Context, r *gojsonrpc2.JSONRPCMessage) {
 		t.Log("method called")
 		_ = r.Respond(ctx, map[string]any{
 			"banana": "forever",

@@ -27,7 +27,7 @@ type Method struct {
 	handler MethodHandler
 }
 
-func (m *Method) ServeJSONRPC(ctx context.Context, r *JSONRPCRequest) {
+func (m *Method) ServeJSONRPC(ctx context.Context, r *JSONRPCMessage) {
 	m.handler.handler(ctx, r)
 }
 
@@ -68,22 +68,11 @@ func (d *JSONRPCDispatcher) ServeRaw(ctx context.Context, w io.Writer, msg json.
 	return d.Serve(ctx, w, m)
 }
 
-var requestPool = sync.Pool{
-	New: func() any {
-		return &JSONRPCRequest{}
-	},
-}
-
 func (d *JSONRPCDispatcher) Serve(ctx context.Context, w io.Writer, msg *JSONRPCMessage) error {
 
 	if method, ok := d.methods[msg.Method]; ok {
-		// TODO: add request pool here
-		r := requestPool.Get().(*JSONRPCRequest)
-		r.Msg = msg
-		r.writer = w
-		defer requestPool.Put(r)
-
-		method.ServeJSONRPC(ctx, r)
+		msg.writer = w
+		method.ServeJSONRPC(ctx, msg)
 	} else {
 		// TODO: prepare error as bytes on init
 		errMsg, _ := json.Marshal(JSONRPCResult{
@@ -103,7 +92,7 @@ func (d *JSONRPCDispatcher) Serve(ctx context.Context, w io.Writer, msg *JSONRPC
 	return nil
 }
 
-type MethodHandlerFunc func(ctx context.Context, r *JSONRPCRequest)
+type MethodHandlerFunc func(ctx context.Context, r *JSONRPCMessage)
 
 type MethodHandler struct {
 	params  *jsonschema.Schema
@@ -153,7 +142,7 @@ func NewTypedHandler[TParams, TResult any](h func(ctx context.Context, params TP
 	return MethodHandler{
 		params: GenSchema[TParams](), // TODO: reflect to get params type
 		result: GenSchema[TResult](), // TODO: reflect to get result type
-		handler: func(ctx context.Context, r *JSONRPCRequest) {
+		handler: func(ctx context.Context, r *JSONRPCMessage) {
 			params, err := BindParams[TParams](ctx, r)
 			if err != nil {
 				return
